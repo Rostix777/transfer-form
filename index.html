@@ -90,6 +90,15 @@
             </div>
           </div>
 
+            <!-- Поле "Введите имя" (по умолчанию скрыто) -->
+            <div class="uk-form-row" id="recipientNameRow" style="display:none;">
+              <label class="uk-form-label">Введите имя получателя</label>
+              <div class="uk-form-controls">
+                <input id="recipientNameInput" class="uk-width-1-1" placeholder="Например: Ivan Petrov / Ivan Petrov Ltd.">
+              </div>
+            </div>
+
+
           <!-- Выбор счёта получателя -->
           <div class="uk-form-row">
             <label class="uk-form-label">Выберите счет получателя</label>
@@ -507,18 +516,51 @@
     }
   });
 
-  // Выбор счёта получателя
-  $("#recipientAccountSelect").on("change", function(){
-    var val=$(this).val();
-    if(val==="__new__"){
-      resetForNewAccount();
-      toggleIbanRow(true);                // ввод IBAN возможен только в этом режиме
-      showDeleteButton(false);
-      return;
-    }
-    var parts=val.split("|"), person=parts[0], key=parts[1];
-    fillSavedAccount(person, key);
-  });
+// Выбор получателя
+$("#recipientPersonSelect").on("change", function(){
+  var person=$(this).val();
+
+  if(person==="__new__"){
+    // Показываем поле "Введите имя"
+    $("#recipientNameRow").show();
+    // Скрываем селектор счетов
+    $("#recipientAccountSelect").closest(".uk-form-row").hide();
+    resetForNewAccount();
+    toggleIbanRow(true);
+    showDeleteButton(false);
+    return;
+  } else {
+    // Скрыть поле "Введите имя"
+    $("#recipientNameRow").hide();
+    // Показать селектор счетов
+    $("#recipientAccountSelect").closest(".uk-form-row").show();
+  }
+
+  var $acc=$("#recipientAccountSelect").empty();
+  $acc.append($("<option>").val("__new__").text("Добавить новый счет получателя"));
+
+  var map=(SAVED[person]||{});
+  if(person==="__own__") map=SAVED["__own__"]||{};
+  var keys=Object.keys(map);
+
+  if(keys.length){
+    var label = (person==="__own__") ? "Между своими счетами" : person;
+    var $og=$("<optgroup>").attr("label", label);
+    keys.forEach(function(k){
+      var info=map[k]||{};
+      var text = (info.iban||k) + (info.bank ? (", "+info.bank) : "");
+      $og.append($("<option>").val(person+"|"+k).text(text));
+    });
+    $acc.append($og);
+    $acc.val(person+"|"+keys[0]).trigger("change");
+    showDeleteButton(person!=="__own__");
+  } else {
+    $acc.val("__new__");
+    resetForNewAccount();
+    toggleIbanRow(true);
+  }
+});
+
 
   // IBAN ввод — префикс-детект (KZ | 2 цифры | другие буквы)
   $("#ibanInput").on("input", function(){
@@ -583,6 +625,4 @@
 
 </body>
 </html>
-
-
 
