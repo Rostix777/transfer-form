@@ -48,9 +48,9 @@
           </div>
 
           <!-- Сумма / Комиссия -->
-          <div class="uk-grid uk-grid-small uk-margin-top">
+          <div class="uk-grid uk-grid-small">
             <div class="uk-width-medium-1-2">
-              <div class="uk-form-row">
+              <div class="uk-form-row uk-margin-top">
                 <label class="uk-form-label">Сумма перевода</label>
                 <div class="uk-form-controls">
                   <input id="amountInput" class="uk-form-large uk-width-1-1" type="number" step="0.01" placeholder="0.00">
@@ -59,7 +59,7 @@
               </div>
             </div>
             <div class="uk-width-medium-1-2">
-              <div class="uk-form-row">
+              <div class="uk-form-row uk-margin-top">
                 <label class="uk-form-label">Комиссия, <span id="feeCurrencyLabel">—</span></label>
                 <div class="uk-form-controls">
                   <input id="feeInput" class="uk-form-large uk-width-1-1" type="text" placeholder="0.00" disabled>
@@ -90,29 +90,28 @@
             </div>
           </div>
 
-            <!-- Поле "Введите имя" (по умолчанию скрыто) -->
-            <div class="uk-form-row" id="recipientNameRow" style="display:none;">
-              <label class="uk-form-label">Введите имя получателя</label>
-              <div class="uk-form-controls">
-                <input id="recipientNameInput" class="uk-width-1-1" placeholder="Например: Ivan Petrov / Ivan Petrov Ltd.">
-              </div>
-            </div>
-
-
           <!-- Выбор счёта получателя -->
-          <div class="uk-form-row">
+          <div class="uk-form-row" id="recipientAccountRow">
             <label class="uk-form-label">Выберите счет получателя</label>
             <div class="uk-form-controls">
               <select id="recipientAccountSelect" class="uk-width-1-1">
                 <option value="__new__" selected>Добавить новый счет получателя</option>
               </select>
               <div class="uk-margin-small-top">
-                <button id="deleteSavedAccountBtn" type="button" class="uk-button uk-button-small uk-button-danger uk-margin-bottom" style="display:none;">Удалить счёт получателя</button>
+                <button id="deleteSavedAccountBtn" type="button" size="small" class="uk-button uk-margin-right uk-button-danger uk-button-small" style="display:none;">Удалить счёт получателя</button>
               </div>
             </div>
           </div>
 
-          <!-- Поле для нового счёта -->
+          <!-- Новое имя получателя (для режима "новый получатель") -->
+          <div class="uk-form-row" id="recipientNameRow" style="display:none;">
+            <label class="uk-form-label">Введите имя получателя</label>
+            <div class="uk-form-controls">
+              <input id="recipientNameInput" class="uk-width-1-1" placeholder="Например: Ivan Petrov / Ivan Petrov Ltd.">
+            </div>
+          </div>
+
+          <!-- Поле IBAN: показывается: новый счёт / сохранённый (readonly) -->
           <div class="uk-form-row" id="ibanRow" style="display:none;">
             <label class="uk-form-label">Номер счета получателя (IBAN)</label>
             <div class="uk-form-controls">
@@ -136,7 +135,7 @@
         </div>
 
         <!-- БАНК-КОРРЕСПОНДЕНТ -->
-        <div class="uk-panel uk-panel-box uk-margin-bottom ">
+        <div class="uk-panel uk-panel-box uk-margin-bottom">
           <div class="uk-form-row">
             <label><input type="checkbox" id="toggleCorr"> Указать банк-корреспондент (опционально)</label>
           </div>
@@ -207,54 +206,244 @@
           </div>
         </div>
 
-        <!-- АДРЕС -->
-        <div class="uk-panel uk-panel-box uk-margin-bottom" id="addressWrap" style="display:none;">
-          <div class="uk-form-row">
-            <label><input type="checkbox" id="toggleAddress"> Добавить адрес получателя (опционально)</label>
-          </div>
-          <div id="addressBlock" style="display:none;">
-            <div class="uk-form-row uk-margin-top">
-              <label class="uk-form-label">Город</label>
-              <div class="uk-form-controls"><input id="cityInput" class="uk-width-1-1" placeholder="Название города"></div>
+            <!-- АДРЕС -->
+            <div class="uk-panel uk-panel-box uk-margin-bottom " id="addressWrap" style="display:none;">
+              <div class="uk-form-row">
+                <label><input type="checkbox" id="toggleAddress"> Добавить адрес получателя (опционально)</label>
+              </div>
+
+              <div id="addressBlock" style="display:none;">
+
+                <!-- Страна -->
+                <div class="uk-form-row uk-margin-top">
+                  <label class="uk-form-label">Выберите страну получателя</label>
+                  <div class="uk-form-controls">
+                    <select id="countrySelect" class="uk-width-1-1">
+                      <option value="" selected disabled>Выберите страну</option>
+                      <!-- ISO-перечень стран (сокращённый до самых употребимых; при желании расширим) -->
+                      <option value="AF">Афганистан</option>
+                      <option value="AL">Албания</option>
+                      <option value="DZ">Алжир</option>
+                      <option value="AD">Андорра</option>
+                      <option value="AO">Ангола</option>
+                      <option value="AG">Антигуа и Барбуда</option>
+                      <option value="AR">Аргентина</option>
+                      <option value="AM">Армения</option>
+                      <option value="AU">Австралия</option>
+                      <option value="AT">Австрия</option>
+                      <option value="AZ">Азербайджан</option>
+                      <option value="BS">Багамы</option>
+                      <option value="BH">Бахрейн</option>
+                      <option value="BD">Бангладеш</option>
+                      <option value="BB">Барбадос</option>
+                      <option value="BY">Беларусь</option>
+                      <option value="BE">Бельгия</option>
+                      <option value="BZ">Белиз</option>
+                      <option value="BJ">Бенин</option>
+                      <option value="BO">Боливия</option>
+                      <option value="BA">Босния и Герцеговина</option>
+                      <option value="BW">Ботсвана</option>
+                      <option value="BR">Бразилия</option>
+                      <option value="BN">Бруней</option>
+                      <option value="BG">Болгария</option>
+                      <option value="BF">Буркина-Фасо</option>
+                      <option value="BI">Бурунди</option>
+                      <option value="KH">Камбоджа</option>
+                      <option value="CM">Камерун</option>
+                      <option value="CA">Канада</option>
+                      <option value="CV">Кабо-Верде</option>
+                      <option value="CF">ЦАР</option>
+                      <option value="TD">Чад</option>
+                      <option value="CL">Чили</option>
+                      <option value="CN">Китай</option>
+                      <option value="CO">Колумбия</option>
+                      <option value="KM">Коморы</option>
+                      <option value="CG">Конго</option>
+                      <option value="CD">ДР Конго</option>
+                      <option value="CR">Коста-Рика</option>
+                      <option value="CI">Кот-д’Ивуар</option>
+                      <option value="HR">Хорватия</option>
+                      <option value="CU">Куба</option>
+                      <option value="CY">Кипр</option>
+                      <option value="CZ">Чехия</option>
+                      <option value="DK">Дания</option>
+                      <option value="DJ">Джибути</option>
+                      <option value="DM">Доминика</option>
+                      <option value="DO">Доминиканская Республика</option>
+                      <option value="EC">Эквадор</option>
+                      <option value="EG">Египет</option>
+                      <option value="SV">Сальвадор</option>
+                      <option value="GQ">Экваториальная Гвинея</option>
+                      <option value="ER">Эритрея</option>
+                      <option value="EE">Эстония</option>
+                      <option value="ET">Эфиопия</option>
+                      <option value="FJ">Фиджи</option>
+                      <option value="FI">Финляндия</option>
+                      <option value="FR">Франция</option>
+                      <option value="GA">Габон</option>
+                      <option value="GM">Гамбия</option>
+                      <option value="GE">Грузия</option>
+                      <option value="DE">Германия</option>
+                      <option value="GH">Гана</option>
+                      <option value="GR">Греция</option>
+                      <option value="GD">Гренада</option>
+                      <option value="GT">Гватемала</option>
+                      <option value="GN">Гвинея</option>
+                      <option value="GW">Гвинея-Бисау</option>
+                      <option value="GY">Гайана</option>
+                      <option value="HT">Гаити</option>
+                      <option value="HN">Гондурас</option>
+                      <option value="HK">Гонконг</option>
+                      <option value="HU">Венгрия</option>
+                      <option value="IS">Исландия</option>
+                      <option value="IN">Индия</option>
+                      <option value="ID">Индонезия</option>
+                      <option value="IR">Иран</option>
+                      <option value="IQ">Ирак</option>
+                      <option value="IE">Ирландия</option>
+                      <option value="IL">Израиль</option>
+                      <option value="IT">Италия</option>
+                      <option value="JM">Ямайка</option>
+                      <option value="JP">Япония</option>
+                      <option value="JO">Иордания</option>
+                      <option value="KZ">Казахстан</option>
+                      <option value="KE">Кения</option>
+                      <option value="KR">Корея, Республика</option>
+                      <option value="KW">Кувейт</option>
+                      <option value="KG">Киргизия</option>
+                      <option value="LA">Лаос</option>
+                      <option value="LV">Латвия</option>
+                      <option value="LB">Ливан</option>
+                      <option value="LS">Лесото</option>
+                      <option value="LR">Либерия</option>
+                      <option value="LY">Ливия</option>
+                      <option value="LI">Лихтенштейн</option>
+                      <option value="LT">Литва</option>
+                      <option value="LU">Люксембург</option>
+                      <option value="MO">Макао</option>
+                      <option value="MG">Мадагаскар</option>
+                      <option value="MW">Малави</option>
+                      <option value="MY">Малайзия</option>
+                      <option value="MV">Мальдивы</option>
+                      <option value="ML">Мали</option>
+                      <option value="MT">Мальта</option>
+                      <option value="MX">Мексика</option>
+                      <option value="MD">Молдова</option>
+                      <option value="MC">Монако</option>
+                      <option value="MN">Монголия</option>
+                      <option value="ME">Черногория</option>
+                      <option value="MA">Марокко</option>
+                      <option value="MZ">Мозамбик</option>
+                      <option value="MM">Мьянма</option>
+                      <option value="NA">Намибия</option>
+                      <option value="NP">Непал</option>
+                      <option value="NL">Нидерланды</option>
+                      <option value="NZ">Новая Зеландия</option>
+                      <option value="NI">Никарагуа</option>
+                      <option value="NE">Нигер</option>
+                      <option value="NG">Нигерия</option>
+                      <option value="MK">Северная Македония</option>
+                      <option value="NO">Норвегия</option>
+                      <option value="OM">Оман</option>
+                      <option value="PK">Пакистан</option>
+                      <option value="PS">Палестина</option>
+                      <option value="PA">Панама</option>
+                      <option value="PG">Папуа — Новая Гвинея</option>
+                      <option value="PY">Парагвай</option>
+                      <option value="PE">Перу</option>
+                      <option value="PH">Филиппины</option>
+                      <option value="PL">Польша</option>
+                      <option value="PT">Португалия</option>
+                      <option value="QA">Катар</option>
+                      <option value="RO">Румыния</option>
+                      <option value="RU">Россия</option>
+                      <option value="RW">Руанда</option>
+                      <option value="SA">Саудовская Аравия</option>
+                      <option value="SN">Сенегал</option>
+                      <option value="RS">Сербия</option>
+                      <option value="SC">Сейшелы</option>
+                      <option value="SL">Сьерра-Леоне</option>
+                      <option value="SG">Сингапур</option>
+                      <option value="SK">Словакия</option>
+                      <option value="SI">Словения</option>
+                      <option value="ZA">ЮАР</option>
+                      <option value="ES">Испания</option>
+                      <option value="LK">Шри-Ланка</option>
+                      <option value="SE">Швеция</option>
+                      <option value="CH">Швейцария</option>
+                      <option value="SY">Сирия</option>
+                      <option value="TW">Тайвань</option>
+                      <option value="TJ">Таджикистан</option>
+                      <option value="TZ">Танзания</option>
+                      <option value="TH">Таиланд</option>
+                      <option value="TL">Тимор-Лесте</option>
+                      <option value="TG">Того</option>
+                      <option value="TT">Тринидад и Тобаго</option>
+                      <option value="TN">Тунис</option>
+                      <option value="TR">Турция</option>
+                      <option value="TM">Туркменистан</option>
+                      <option value="UG">Уганда</option>
+                      <option value="UA">Украина</option>
+                      <option value="AE">ОАЭ</option>
+                      <option value="GB">Великобритания</option>
+                      <option value="US">США</option>
+                      <option value="UY">Уругвай</option>
+                      <option value="UZ">Узбекистан</option>
+                      <option value="VE">Венесуэла</option>
+                      <option value="VN">Вьетнам</option>
+                      <option value="YE">Йемен</option>
+                      <option value="ZM">Замбия</option>
+                      <option value="ZW">Зимбабве</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Город -->
+                <div class="uk-form-row">
+                  <label class="uk-form-label">Город получателя</label>
+                  <div class="uk-form-controls">
+                    <input id="cityInput" class="uk-width-1-1" placeholder="Например: Алматы / Москва / Никосия">
+                  </div>
+                </div>
+
+                <!-- Адрес -->
+                <div class="uk-form-row">
+                  <label class="uk-form-label">Адрес получателя</label>
+                  <div class="uk-form-controls">
+                    <input id="addressLineInput" class="uk-width-1-1" placeholder="Улица, дом, корпус/строение, квартира/офис">
+                  </div>
+                </div>
+
+              </div>
             </div>
+
+
+          <!-- ДОКУМЕНТ -->
+          <div class="uk-panel uk-panel-box uk-margin-bottom" id="docWrap">
             <div class="uk-form-row">
-              <label class="uk-form-label">Улица</label>
-              <div class="uk-form-controls"><input id="streetInput" class="uk-width-1-1" placeholder="Полное название улицы"></div>
-            </div>
-            <div class="uk-form-row">
-              <label class="uk-form-label">Дом</label>
-              <div class="uk-form-controls"><input id="houseInput" class="uk-width-1-1" placeholder="Номер дома или строения"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ДОКУМЕНТ -->
-        <div class="uk-panel uk-panel-box uk-margin-bottom" id="docWrap" style="display:none;">
-          <div class="uk-form-row">
-            <label><input type="checkbox" id="toggleDoc"> Добавить документ (опционально)</label>
-          </div>
-          <div id="docBlock" style="display:none;">
-            <div class="uk-form-file uk-margin-top">
-              <button class="uk-button"><i class="uk-icon-folder-open"></i> Выберите файл</button>
-              <input id="docFile" type="file">
+              <label class="uk-form-label uk-margin-right">Добавить документ (опционально)</label>
+              <div class="uk-form-file">
+                <button class="uk-button"><i class="uk-icon-folder-open"></i> Выберите файл</button>
+                <input id="docFile" type="file">
+              </div>
             </div>
           </div>
+
+
+                <!-- Итог -->
+                <div class="uk-panel uk-panel-box">
+                  <div class="uk-margin-top">
+                    <button type="button" id="submitBtn" class="uk-button uk-button-large uk-button-success uk-width-1-1">Перевести</button>
+                  </div>
+                  <div id="submitResult" class="uk-text-small uk-text-muted uk-margin-small-top"></div>
+                </div>
+
+              </form>
+            </li>
+
+            <li><div class="uk-panel uk-panel-box">Демо-вкладка</div></li>
+          </ul>
         </div>
-
-        <!-- Итог -->
-        <div class="uk-panel uk-panel-box">
-          <div class="uk-margin-top">
-            <button type="button" id="submitBtn" class="uk-button uk-button-large uk-button-success uk-width-1-1">Перевести</button>
-          </div>
-          <div id="submitResult" class="uk-text-small uk-text-muted uk-margin-small-top"></div>
-        </div>
-
-      </form>
-    </li>
-
-    <li><div class="uk-panel uk-panel-box">Демо-вкладка</div></li>
-  </ul>
-</div>
 
 <script>
 (function($){
@@ -325,13 +514,45 @@
       $s.append($o);
     });
   }
-  function toggleIbanRow(show){
-    if(show){ $("#ibanRow").show(); $("#ibanInput").val("").focus(); $("#ibanHint").text(""); }
-    else    { $("#ibanRow").hide(); $("#ibanInput").val(""); $("#ibanHint").text(""); }
+  function toggleIbanRow(show, readonly){
+    if(show){
+      $("#ibanRow").show();
+      if(readonly){ $("#ibanInput").prop("disabled", true); }
+      else { $("#ibanInput").prop("disabled", false).val("").focus(); }
+      $("#ibanHint").text("");
+    } else {
+      $("#ibanRow").hide(); $("#ibanInput").prop("disabled", false).val(""); $("#ibanHint").text("");
+    }
   }
   function showDeleteButton(show){
     $("#deleteSavedAccountBtn").toggle(!!show);
   }
+function getAccountBaseCurrency(acc){
+  // Пытаемся вытащить валюту из заголовка: "1468877 (1435.86 USD) - Freedom Broker" -> USD
+  var m = (acc.title || "").match(/\(([^)]+)\)/);
+  if (m && m[1]) {
+    var parts = m[1].trim().split(/\s+/);
+    return (parts[parts.length - 1] || "").toUpperCase();
+  }
+  // Фолбэк: берём валюту с максимальным остатком
+  var best = "USD", bestVal = -1;
+  Object.keys(acc.balances || {}).forEach(function(c){
+    var v = acc.balances[c] || 0;
+    if (v > bestVal) { best = c; bestVal = v; }
+  });
+  return best.toUpperCase();
+}
+function hidePaymentCheckboxesForSaved(){
+  // скрываем строки с чекбоксами "юр. лицо" и "резидент KZ"
+  $("#isCompany").closest(".uk-form-row").hide();
+  $("#isResidentKZ").closest(".uk-form-row").hide();
+}
+
+function showPaymentCheckboxes(){
+  // показываем обратно (используется для новых счетов/ввода IBAN)
+  $("#isCompany").closest(".uk-form-row").show();
+  $("#isResidentKZ").closest(".uk-form-row").show();
+}
 
   /* ====== Шапка ====== */
   function initHeader(){
@@ -358,11 +579,17 @@
     var bal=acc.balances[cur]||0;
     var available=bal*0.9;
     $("#amountHint").text("Доступно с учётом маржи "+fmt(available));
-    $("#feeCurrencyLabel").text(cur);
+
+    // базовая валюта счёта для комиссии
+    var baseCur = getAccountBaseCurrency(acc);
+    $("#feeCurrencyLabel").text(baseCur);
+
     var amt=parseFloat($("#amountInput").val()||"0");
-    var fee=amt*0.03;
-    $("#feeInput").val(fmt(fee)+" "+cur);
-    $("#netBox").text("Сумма к зачислению за вычетом комиссии: "+fmt(Math.max(amt-fee,0))+" "+cur);
+    var fee=amt*0.03; // демо-тариф 3%
+    $("#feeInput").val(fmt(fee)+" "+baseCur);
+
+    // Нетто по-прежнему показываем в валюте перевода
+    $("#netBox").text("Сумма к зачислению за вычетом комиссии: " + fmt(Math.max(amt - fee, 0)) + " " + baseCur);
   }
 
   /* ====== Блок получателя ====== */
@@ -379,23 +606,31 @@
   }
   function fillSavedAccount(person, key){
     var info=(SAVED[person]||{})[key]; if(!info) return;
-    toggleIbanRow(false);
+    // IBAN: показываем и блокируем (по пожеланию)
+    toggleIbanRow(true, /*readonly*/true);
+    $("#ibanInput").val(info.iban);
     $("#recipientAccountHidden").val(info.iban);
     $("#accNameHidden").val(info.personName || person);
-    $("#bicInput").val(info.bic).prop("disabled", true);
+    // BIC: автозаполнение и блокировка
+    $("#bicInput").val(info.bic||"").prop("disabled", !!info.bic);
     $("#bankNameHelp").text(info.bank || "");
+    // корреспондент
     if(info.corr){
       $("#toggleCorr").prop("checked", true);
       $("#corrBlock").show();
       $("#corrAccInput").val(info.corr.acc);
       $("#corrBicInput").val(info.corr.bic).prop("disabled", true);
-      $("#corrBankNameHelp").text(info.corr.bank || "");
+      $("#corrBankNameHelp").text(info.corr.bank||"");
     }else{
       $("#toggleCorr").prop("checked", false);
       $("#corrBlock").hide();
       $("#corrAccInput, #corrBicInput").val(""); $("#corrBankNameHelp").text(""); $("#corrBicInput").prop("disabled", false);
     }
     showPaymentInfoByJurisdiction(info);
+        // Скрываем чекбоксы при выборе сохранённого счёта (в т.ч. "__own__")
+    hidePaymentCheckboxesForSaved();
+    $("#addressWrap, #docWrap").hide();
+    showDeleteButton(person!=="__own__");
     $("#addressWrap, #docWrap").hide();
     showDeleteButton(person!=="__own__"); // показывать, если сохранённый, кроме «между своими»
   }
@@ -480,19 +715,25 @@
   // Выбор получателя
   $("#recipientPersonSelect").on("change", function(){
     var person=$(this).val();
+
+    // режим "новый получатель": скрыть селектор счетов, показать «Введите имя» и IBAN (редактируемый)
+    if(person==="__new__"){
+      $("#recipientAccountRow").hide();
+      $("#recipientNameRow").show();
+      resetForNewAccount();
+      toggleIbanRow(true, /*readonly*/false);
+      showDeleteButton(false);
+      showPaymentCheckboxes();
+      return;
+    } else {
+      $("#recipientNameRow").hide();
+      $("#recipientAccountRow").show();
+    }
+
     var $acc=$("#recipientAccountSelect").empty();
-    // Всегда первым: «Добавить новый счёт получателя»
     $acc.append($("<option>").val("__new__").text("Добавить новый счет получателя"));
     showDeleteButton(false);
 
-    if(person==="__new__"){
-      $acc.val("__new__");
-      resetForNewAccount();
-      toggleIbanRow(true);
-      return;
-    }
-
-    // Сформировать список счетов выбранного получателя
     var map=(SAVED[person]||{});
     if(person==="__own__") map=SAVED["__own__"]||{};
     var keys=Object.keys(map);
@@ -509,58 +750,26 @@
       // По умолчанию выбрать первый сохранённый счёт
       $acc.val(person+"|"+keys[0]).trigger("change");
     }else{
-      // Нет сохранённых — остаёмся на «новом»
       $acc.val("__new__");
       resetForNewAccount();
-      toggleIbanRow(true);
+      toggleIbanRow(true, false);
     }
   });
 
-// Выбор получателя
-$("#recipientPersonSelect").on("change", function(){
-  var person=$(this).val();
-
-  if(person==="__new__"){
-    // Показываем поле "Введите имя"
-    $("#recipientNameRow").show();
-    // Скрываем селектор счетов
-    $("#recipientAccountSelect").closest(".uk-form-row").hide();
-    resetForNewAccount();
-    toggleIbanRow(true);
-    showDeleteButton(false);
-    return;
-  } else {
-    // Скрыть поле "Введите имя"
-    $("#recipientNameRow").hide();
-    // Показать селектор счетов
-    $("#recipientAccountSelect").closest(".uk-form-row").show();
-  }
-
-  var $acc=$("#recipientAccountSelect").empty();
-  $acc.append($("<option>").val("__new__").text("Добавить новый счет получателя"));
-
-  var map=(SAVED[person]||{});
-  if(person==="__own__") map=SAVED["__own__"]||{};
-  var keys=Object.keys(map);
-
-  if(keys.length){
-    var label = (person==="__own__") ? "Между своими счетами" : person;
-    var $og=$("<optgroup>").attr("label", label);
-    keys.forEach(function(k){
-      var info=map[k]||{};
-      var text = (info.iban||k) + (info.bank ? (", "+info.bank) : "");
-      $og.append($("<option>").val(person+"|"+k).text(text));
-    });
-    $acc.append($og);
-    $acc.val(person+"|"+keys[0]).trigger("change");
-    showDeleteButton(person!=="__own__");
-  } else {
-    $acc.val("__new__");
-    resetForNewAccount();
-    toggleIbanRow(true);
-  }
-});
-
+  // Выбор счёта получателя
+  $("#recipientAccountSelect").on("change", function(){
+    var val=$(this).val();
+    if(val==="__new__"){
+      resetForNewAccount();
+      toggleIbanRow(true, /*readonly*/false);
+      showDeleteButton(false);
+      // >>> добавь:
+      showPaymentCheckboxes();
+      return;
+    }
+    var parts=val.split("|"), person=parts[0], key=parts[1];
+    fillSavedAccount(person, key);
+  });
 
   // IBAN ввод — префикс-детект (KZ | 2 цифры | другие буквы)
   $("#ibanInput").on("input", function(){
@@ -570,7 +779,10 @@ $("#recipientPersonSelect").on("change", function(){
       $("#ibanHint").text("Обнаружен KZ — показываем блок параметров для Казахстана");
       $("#paymentInfoBox").show(); $("#kzBlock").show(); $("#ruBlock").hide();
       $("#isResidentKZ").prop("checked", true); $("#isCompany").prop("checked", false);
+      // >>> на всякий случай показываем чекбоксы (для режима нового счёта)
+      showPaymentCheckboxes();
       recomputeKBE(); defaultKNP();
+      if ($("#recipientPersonSelect").val() === "__new__") $("#knpSelect").val("343");
     }else if(/^\d{2}/.test(raw)){
       $("#ibanHint").text("Обнаружен префикс 2 цифры — идентифицирован как РФ");
       $("#paymentInfoBox").show(); $("#kzBlock").hide(); $("#ruBlock").show();
@@ -586,7 +798,7 @@ $("#recipientPersonSelect").on("change", function(){
     $("#recipientAccountHidden").val($(this).val().toUpperCase().replace(/\s+/g,""));
   });
 
-  // Переключатели блоков
+  // Переключатели
   $("#toggleCorr").on("change", function(){ $("#corrBlock").toggle(this.checked); });
   $("#toggleAddress").on("change", function(){ $("#addressBlock").toggle(this.checked); });
   $("#toggleDoc").on("change", function(){ $("#docBlock").toggle(this.checked); });
@@ -615,8 +827,11 @@ $("#recipientPersonSelect").on("change", function(){
 
   /* ====== Инициализация ====== */
   (function init(){
-    initHeader();
-    // стартовая логика: новый получатель/новый счёт
+    // счёт/валюта/комиссия
+    var $sender=$("#senderSelect").empty();
+    ACCOUNTS.forEach(function(a){ $sender.append($("<option>").val(a.no).text(a.title)); });
+    updateCurrencyOptions(ACCOUNTS[0]); updateHeaderHints();
+    // режим: новый получатель (прячем селектор счетов, показываем имя + IBAN)
     $("#recipientPersonSelect").val("__new__").trigger("change");
   })();
 
@@ -625,4 +840,3 @@ $("#recipientPersonSelect").on("change", function(){
 
 </body>
 </html>
-
