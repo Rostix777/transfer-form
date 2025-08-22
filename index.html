@@ -116,7 +116,6 @@
             <label class="uk-form-label">Номер счета получателя (IBAN)</label>
             <div class="uk-form-controls">
               <input id="ibanInput" class="uk-width-1-1" placeholder="Введите номер счета">
-              <div id="ibanHint" class="uk-text-muted uk-margin-small-top"></div>
             </div>
           </div>
 
@@ -170,13 +169,12 @@
               <label><input type="checkbox" id="isResidentKZ"> Получатель резидент Казахстана</label>
             </div>
 
-            <div class="uk-form-row">
-              <label class="uk-form-label">Код бенефициара (Кбе)</label>
-              <div class="uk-form-controls">
-                <select id="kbeSelect" class="uk-width-1-1"></select>
-                <div id="kbeHint" class="uk-text-muted uk-margin-small-top"></div>
-              </div>
+          <div class="uk-form-row">
+            <label class="uk-form-label">Код бенефициара (Кбе)</label>
+            <div class="uk-form-controls">
+              <select id="kbeSelect" class="uk-width-1-1"></select>
             </div>
+          </div>
 
             <div class="uk-form-row">
               <label class="uk-form-label">Назначение платежа (КНП)</label>
@@ -519,9 +517,8 @@
       $("#ibanRow").show();
       if(readonly){ $("#ibanInput").prop("disabled", true); }
       else { $("#ibanInput").prop("disabled", false).val("").focus(); }
-      $("#ibanHint").text("");
     } else {
-      $("#ibanRow").hide(); $("#ibanInput").prop("disabled", false).val(""); $("#ibanHint").text("");
+      $("#ibanRow").hide(); $("#ibanInput").prop("disabled", false).val("");
     }
   }
   function showDeleteButton(show){
@@ -675,7 +672,6 @@ function showPaymentCheckboxes(){
     var second= isCompany ? "5" : "9";
     var list = KBE_SECTORS.map(function(s){ return [first + s[0], s[1]]; });
     renderOptions($("#kbeSelect"), list, first+second);
-    $("#kbeHint").text("1-я цифра — резидентство ("+(first==="1"?"резидент":"нерезидент")+"), 2-я — сектор экономики");
   }
   function defaultKNP(){
     if(!$("#kzBlock").is(":visible")) return;
@@ -774,7 +770,7 @@ function showPaymentCheckboxes(){
   // IBAN ввод — префикс-детект (KZ | 2 цифры | другие буквы)
   $("#ibanInput").on("input", function(){
     var raw=($(this).val()||"").toUpperCase().replace(/\s+/g,"");
-    if(!raw){ $("#ibanHint").text(""); $("#paymentInfoBox").hide(); $("#kzBlock, #ruBlock").hide(); return; }
+    if(!raw){ $("#paymentInfoBox").hide(); $("#kzBlock, #ruBlock").hide(); return; }
     if(/^KZ/.test(raw)){
       $("#ibanHint").text("Обнаружен KZ — показываем блок параметров для Казахстана");
       $("#paymentInfoBox").show(); $("#kzBlock").show(); $("#ruBlock").hide();
@@ -840,3 +836,4 @@ function showPaymentCheckboxes(){
 
 </body>
 </html>
+
