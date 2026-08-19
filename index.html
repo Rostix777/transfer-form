@@ -208,7 +208,7 @@
 
   .chip { @apply inline-block text-[11px] font-semibold px-2 py-1 rounded-[7px] whitespace-nowrap tabular-nums; }
   .chip-buy { @apply bg-brand-surface-muted text-brand-main; }
-  .chip-sell { @apply text-base-amber; background: color-mix(in srgb, var(--base-amber) 14%, transparent); }
+  .chip-sell { @apply text-base-red; background: color-mix(in srgb, var(--base-red) 14%, transparent); }
   .chip-hold { @apply text-tertiary bg-surface-2; }
   .chip-blue { @apply text-base-blue; background: color-mix(in srgb, var(--base-blue) 12%, transparent); }
 
@@ -282,6 +282,22 @@
   .fchk b { @apply text-[13px] font-semibold text-primary; }
   .fchk > span:last-child { @apply text-[11px] text-tertiary; }
   .chip-lbl { @apply text-[11px] text-tertiary font-semibold mb-2; }
+  /* Корзина-конструктор */
+  .cartrow { @apply flex items-center gap-2 py-2.5 border-b border-bg-border; }
+  .qtybox { @apply inline-flex items-center rounded-lg border border-bg-border overflow-hidden shrink-0; }
+  .qtybox button { @apply w-7 h-8 grid place-items-center text-secondary transition; }
+  .qtybox button:hover { @apply text-primary; background: var(--surface-2); }
+  .qtyinp { @apply w-8 h-8 text-center text-[13px] font-semibold bg-transparent tabular-nums text-primary border-x border-bg-border; }
+  .shareinp { @apply w-9 text-right text-[11.5px] font-semibold bg-transparent tabular-nums text-primary; }
+  .tolinp { @apply w-11 text-center text-[13px] font-semibold rounded-lg border border-bg-border bg-surface px-1.5 py-1.5 tabular-nums text-primary; }
+  .qtyinp:focus, .shareinp:focus, .tolinp:focus { @apply outline-none border-brand-main; }
+  /* строка операции корзины (2 яруса — не переполняется на мобиле) */
+  .oprow { @apply py-2.5 border-b border-bg-border; }
+  .oprow:last-child { @apply border-b-0; }
+  /* подсветка изменившейся цены */
+  .px { @apply tabular-nums transition-colors duration-500; }
+  .px.up { color: var(--brand-main); }
+  .px.down { color: var(--base-red); }
   /* Группа чипсов со сворачиванием до 3 строк */
   .chipwrap { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .chipwrap.clip { max-height: var(--clip3, 116px); overflow: hidden; }
@@ -421,12 +437,20 @@
           <b>{{ titles[screen].t }}</b>
           <span>{{ titles[screen].s }}</span>
         </div>
-        <button v-if="screen==='analysis'" class="pillbtn ai" @click="goConstruct" title="Создать новый портфель с AI">
-          <span class="w-4 h-4 grid place-items-center" v-html="ic.spark"></span><span>Создать&nbsp;новый</span>
+        <button v-if="screen==='builder' && builderStep==='plan'" class="pillbtn" :class="{'!w-9 !px-0 justify-center': device!=='web'}" @click="refreshAll" title="Обновить котировки и сводку">
+          <span class="w-4 h-4 grid place-items-center [&_svg]:w-4 [&_svg]:h-4" v-html="ic.refresh"></span>
+          <span v-if="device==='web'">Обновить</span>
         </button>
-        <button v-if="screen==='analysis' || screen==='construct'" class="pillbtn" @click="sheet = screen==='construct' ? 'cwidgets' : 'widgets'" title="Виджеты на странице">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14.5v6M14.5 17.5h6"/></svg>
+        <button v-if="screen==='analysis'" class="pillbtn" :class="{'!w-9 !px-0 justify-center': device!=='web'}" @click="refreshRating" title="Обновить данные и Freedom Rating">
+          <span class="w-4 h-4 grid place-items-center [&_svg]:w-4 [&_svg]:h-4" v-html="ic.refresh"></span>
+          <span v-if="device==='web'">Обновить</span>
+        </button>
+        <button v-if="screen==='analysis' || screen==='construct'" class="pillbtn" :class="{'!w-9 !px-0 justify-center': device!=='web'}" @click="sheet = screen==='construct' ? 'cwidgets' : 'widgets'" title="Виджеты на странице">
+          <span class="w-4 h-4 grid place-items-center [&_svg]:w-4 [&_svg]:h-4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14.5v6M14.5 17.5h6"/></svg></span>
           <span v-if="device==='web'">Виджеты</span>
+        </button>
+        <button v-if="screen==='analysis'" class="pillbtn !bg-brand-surface-muted !text-brand-main !border-brand-main" :class="{'!w-9 !px-0 justify-center': device!=='web'}" @click="goConstruct" title="Создать новый портфель с AI">
+          <span class="w-4 h-4 grid place-items-center [&_svg]:w-4 [&_svg]:h-4" v-html="ic.spark"></span><span v-if="device==='web'">Создать&nbsp;новый</span>
         </button>
       </div>
 
@@ -460,10 +484,6 @@
                       <button class="navdot" @click="scrollKpi(-1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
                       <button class="navdot" @click="scrollKpi(1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
                     </div>
-                    <!-- обновить рейтинг (объединённый виджет Счёт+Рейтинг) -->
-                    <button v-else-if="id==='account'" class="navdot" title="Обновить Freedom Rating" @click.stop="refreshRating">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :class="{'animate-spin': ratingRefreshing}"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>
-                    </button>
                     <!-- dropdown распределения (web) -->
                     <div v-else-if="id==='distribution' && device==='web'" class="relative">
                       <div v-if="distMenuOpen" class="fixed inset-0 z-20" @click="distMenuOpen=false"></div>
@@ -831,9 +851,9 @@
       <!-- Футер шага 1 · два главных CTA (оптимизировать / создать заново) -->
       <div v-if="screen==='analysis'" class="footer">
         <!-- блокер: не заполнен инвестиционный профиль (флоу строится на нём) -->
-        <button v-if="!pa.investProfile.has" class="cta slim err" @click="toast('bell','Инвестиционный профиль','Заполните профиль CPS 10174 — на нём строятся рекомендации')">
-          <span class="w-[18px] h-[18px] grid place-items-center" v-html="ic.warn"></span>
-          Сначала заполните инвестиционный профиль
+        <button v-if="!pa.investProfile.has" class="cta slim err !text-[14px] whitespace-nowrap" @click="toast('bell','Инвестиционный профиль','Заполните профиль CPS 10174 — на нём строятся рекомендации')">
+          <span class="w-[18px] h-[18px] grid place-items-center shrink-0" v-html="ic.warn"></span>
+          Заполните инвестиционный профиль
         </button>
         <!-- пустой портфель: собрать новый -->
         <button v-else-if="pa.empty" class="cta slim" @click="goConstruct">
@@ -889,7 +909,7 @@
                     <input type="range" min="0" max="7" step="1" v-model.number="cRatingMin" @input="clampFr('min')">
                     <input type="range" min="0" max="7" step="1" v-model.number="cRatingMax" @input="clampFr('max')">
                   </div>
-                  <div class="rscale mt-3"><span :class="{on:frOff}">Off</span><span v-for="n in 7" :key="n" :class="{on: !frOff && n>=frMinDisp && n<=cRatingMax}">{{ n }}</span></div>
+                  <div class="rscale mt-3"><span class="cursor-pointer" :class="{on:frOff}" @click="setFr(0)">Off</span><span v-for="n in 7" :key="n" class="cursor-pointer" :class="{on: !frOff && n>=frMinDisp && n<=cRatingMax}" @click="setFr(n)">{{ n }}</span></div>
                 </div>
 
                 <!-- Распределение активов → assetAllocation {stocks, bonds}; Off (слева) = дефолт API, тянем вправо = облигации -->
@@ -902,7 +922,7 @@
                     </template>
                   </div>
                   <input type="range" min="0" max="100" step="5" v-model.number="cBondsPct" class="rrange" :style="{'--pct': cBondsPct+'%'}">
-                  <div class="rscale mt-2"><span :class="{on:allocOff}">Off</span><span>50%</span><span>100%</span></div>
+                  <div class="rscale mt-2"><span class="cursor-pointer" :class="{on:allocOff}" @click="cBondsPct=0">Off</span><span class="cursor-pointer" @click="cBondsPct=50">50%</span><span class="cursor-pointer" @click="cBondsPct=100">100%</span></div>
                 </div>
 
                 <!-- Исключить бумаги → excludeTickers (по умолчанию НИЧЕГО не исключено) -->
@@ -1054,131 +1074,269 @@
             </div>
           </div>
 
-          <!-- 2.2 План (before/after + сделки + правки) -->
-          <div v-else class="sec" :class="device==='web' ? 'webgrid webgrid-2' : ''">
+          <!-- 2.2 КОРЗИНА-КОНСТРУКТОР -->
+          <div v-else class="sec" :class="device==='web' ? 'max-w-[720px] mx-auto w-full' : ''">
 
-            <!-- ЛЕВО: сравнение + управление -->
-            <div>
-              <p class="label">Было → станет</p>
-              <div class="cmp mb-3">
+            <!-- Шапка: что изменится + AI-сводка -->
+            <div class="ai ai-good mb-3">
+              <div class="flex items-center gap-2.5 mb-2.5">
+                <span class="ai-badge tint-brand shrink-0" style="width:30px;height:30px"><span v-html="ic.spark"></span></span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13px] font-bold">{{ mode==='rebalance' ? 'Что изменится' : 'Собранный портфель' }}</div>
+                  <div class="text-[11px] text-secondary">Сводка от AI</div>
+                </div>
+              </div>
+              <!-- стало (акцент) ← было: Freedom Rating + Диверсификация -->
+              <div class="cmp mb-2.5">
                 <div class="cmp-box">
-                  <div class="text-[11px] text-secondary">Freedom Rating</div>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="text-[16px] font-bold tabular-nums text-tertiary">{{ plan.before.fr.toFixed(1) }}</span>
-                    <span class="text-tertiary" v-html="ic.arrow"></span>
-                    <span class="text-[18px] font-bold tabular-nums text-brand-main">{{ plan.after.fr.toFixed(1) }}</span>
+                  <div class="text-[10.5px] text-secondary">Freedom Rating</div>
+                  <!-- звёзды: стало -->
+                  <div class="flex items-center gap-0.5 mt-1" v-html="starsFrac((plan.after.fr-1)/2, 11)"></div>
+                  <!-- числа: стало (крупно золотым) · было (мелко серым) -->
+                  <div class="flex items-baseline gap-1 mt-1">
+                    <span class="text-[19px] font-extrabold tabular-nums" style="color:#F5B301">{{ plan.after.fr.toFixed(1) }}</span>
+                    <span class="text-[9.5px] font-bold text-tertiary">/7</span>
+                    <span class="text-[10px] font-bold text-brand-main">+{{ (plan.after.fr-plan.before.fr).toFixed(1) }}</span>
+                    <span class="text-[10px] text-tertiary">было {{ plan.before.fr.toFixed(1) }}</span>
                   </div>
-                  <div class="text-[11px] font-semibold text-brand-main mt-0.5">+{{ (plan.after.fr-plan.before.fr).toFixed(1) }}</div>
+                  <div class="text-[10.5px] font-semibold mt-0.5 truncate" style="color:#F5B301">{{ frLabel(plan.after.fr) }}</div>
                 </div>
                 <div class="cmp-box">
-                  <div class="text-[11px] text-secondary">Диверсификация</div>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="text-[16px] font-bold tabular-nums text-tertiary">{{ plan.before.div }}</span>
-                    <span class="text-tertiary" v-html="ic.arrow"></span>
-                    <span class="text-[18px] font-bold tabular-nums text-brand-main">{{ plan.after.div }}</span>
+                  <div class="text-[10.5px] text-secondary">Диверсификация</div>
+                  <div class="flex items-center gap-0.5 mt-1" v-html="starsFrac(plan.after.div/100*3, 11)"></div>
+                  <div class="flex items-baseline gap-1 mt-1">
+                    <span class="text-[19px] font-extrabold tabular-nums text-brand-main">{{ plan.after.div }}</span>
+                    <span class="text-[9.5px] font-bold text-tertiary">/100</span>
+                    <span class="text-[10px] font-bold text-brand-main">+{{ plan.after.div-plan.before.div }}</span>
+                    <span class="text-[10px] text-tertiary">было {{ plan.before.div }}</span>
                   </div>
-                  <div class="text-[11px] font-semibold text-brand-main mt-0.5">+{{ plan.after.div-plan.before.div }}</div>
+                  <div class="text-[10.5px] font-semibold mt-0.5 text-brand-main truncate">{{ plan.after.div>=70 ? 'Хорошая' : plan.after.div>=50 ? 'Средняя' : 'Низкая' }}</div>
                 </div>
               </div>
+              <p class="text-[12px] text-primary/90 leading-snug">{{ aiSummaryText }}</p>
+              <div v-if="summaryStale" class="flex items-center gap-1.5 mt-2 text-[11px] font-semibold text-base-amber">
+                <span class="w-3.5 h-3.5 grid place-items-center" v-html="ic.warn"></span>
+                Корзина изменена — обновите сводку AI.
+              </div>
+            </div>
 
-              <div class="card p-3.5 mb-3">
-                <div class="flex items-center justify-between text-[12.5px] py-1">
-                  <span class="text-secondary">Сохранено позиций</span><span class="font-semibold tabular-nums">{{ keptCount }}</span>
-                </div>
-                <div class="flex items-center justify-between text-[12.5px] py-1">
-                  <span class="text-secondary">Заменено / добавлено</span><span class="font-semibold tabular-nums">{{ changedCount }}</span>
-                </div>
-                <div class="flex items-center justify-between text-[12.5px] py-1">
-                  <span class="text-secondary">Сделок к исполнению</span><span class="font-semibold tabular-nums">{{ activeOrders.length }}</span>
-                </div>
-                <div class="flex items-center justify-between text-[12.5px] py-1 border-t border-bg-border mt-1 pt-2">
-                  <span class="text-secondary">Свободно после сделок</span><span class="font-semibold tabular-nums">{{ money(plan.cash) }}</span>
-                </div>
+            <!-- Корзина операций -->
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <p class="label mb-0 min-w-0 truncate">Корзина операций</p>
+              <button class="wbtn !py-1.5 !px-2.5 !text-[11.5px] shrink-0" @click="openAddTicker">
+                <span class="w-3.5 h-3.5 grid place-items-center [&_svg]:w-3.5 [&_svg]:h-3.5" v-html="ic.plus"></span> Добавить
+              </button>
+            </div>
+            <div class="card px-3 py-1.5 mb-4">
+              <!-- Σ целевых долей — вверху -->
+              <div v-if="basketRows.length" class="flex items-center justify-between gap-2 py-2.5 border-b border-bg-border text-[12px]">
+                <span class="text-secondary">Σ целевых долей</span>
+                <span class="font-bold tabular-nums" :class="Math.abs(shareSum-100)<=(tolerancePct+0.5) ? 'text-brand-main' : 'text-base-amber'">{{ shareSum.toFixed(1) }}%</span>
               </div>
 
-              <div class="flex gap-2 mb-4">
-                <button class="ghost flex items-center justify-center gap-2" @click="regenerate">
-                  <span v-html="ic.refresh"></span> Перегенерировать
-                </button>
-                <button class="ghost flex items-center justify-center gap-2" @click="openAddTicker">
-                  <span v-html="ic.plus"></span> Добавить
-                </button>
+              <!-- строки операций: покупки + продажи -->
+              <div v-for="row in cartOps" :key="row.ticker+row.side" class="oprow flex gap-2.5">
+                <!-- левая колонка: логотип + крестик в рамке под ним -->
+                <div class="flex flex-col items-center shrink-0">
+                  <span class="tk-badge !w-8 !h-8" :class="{'has-logo': tickerLogo(row.ticker)}">
+                    <img v-if="tickerLogo(row.ticker)" :src="tickerLogo(row.ticker)" :alt="row.ticker" loading="lazy">
+                    <template v-else>{{ row.ticker.split('.')[0].slice(0,4) }}</template>
+                  </span>
+                  <!-- крестик выровнен по ярусу с количеством (степпером) -->
+                  <button class="w-8 h-8 mt-3.5 rounded-md border border-bg-border grid place-items-center text-tertiary hover:text-base-red hover:border-base-red transition" title="Убрать из корзины" @click="removeBasketRow(row)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                  </button>
+                </div>
+                <!-- правая часть: два яруса -->
+                <div class="flex-1 min-w-0">
+                  <!-- ярус 1: тикер/бейдж/звёзды/имя + СТОИМОСТЬ (крупно, справа) -->
+                  <div class="flex items-start gap-2.5">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-[13px] font-semibold leading-tight truncate">{{ row.ticker }}</span>
+                        <span class="chip text-[9px] py-0 px-1.5 shrink-0" :class="row.side==='sell' ? 'chip-sell' : 'chip-buy'">{{ row.side==='sell' ? 'Продать' : 'Купить' }}</span>
+                      </div>
+                      <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
+                        <span class="flex items-center gap-0.5 shrink-0 cursor-help" :title="'Freedom Rating: '+row.fr+' / 7'" v-html="starsFrac((row.fr-1)/2, 10)"></span>
+                        <span class="text-[10.5px] text-secondary truncate leading-tight">{{ row.name }}</span>
+                      </div>
+                    </div>
+                    <div class="text-right shrink-0 leading-tight whitespace-nowrap">
+                      <div class="text-[15px] font-extrabold tabular-nums">{{ money(row.value) }}</div>
+                      <div class="text-[9px] text-tertiary">{{ row.side==='sell' ? 'сумма продажи' : 'стоимость' }}</div>
+                    </div>
+                  </div>
+                  <!-- ярус 2: количество · доля + текущая цена (мелко, справа) -->
+                  <div class="flex items-center gap-2.5 mt-1.5">
+                    <div class="qtybox shrink-0">
+                      <button @click="qtyStep(row,-1)" aria-label="меньше"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+                      <input class="qtyinp" :value="row.qty" @change="setQty(row, $event.target.value)" inputmode="numeric">
+                      <button @click="qtyStep(row,1)" aria-label="больше"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                    </div>
+                    <div v-if="row.side!=='sell'" class="flex items-center gap-1 shrink-0">
+                      <span class="text-[10px] text-tertiary">доля</span>
+                      <input class="shareinp !text-center !w-10 !h-8 border border-bg-border rounded-md" :value="cartShare(row)" @change="setRowShare(row, $event.target.value)" inputmode="decimal">
+                      <span class="text-[10px] text-tertiary">%</span>
+                    </div>
+                    <div v-else class="flex items-center gap-1 shrink-0" title="Какая доля позиции останется после продажи (0 = продаём всё)">
+                      <span class="text-[10px] text-tertiary">остаётся</span>
+                      <input class="shareinp !text-center !w-10 !h-8 border border-bg-border rounded-md" :value="sellRemain(row)" @change="setSellRemain(row, $event.target.value)" inputmode="numeric">
+                      <span class="text-[10px] text-tertiary">%</span>
+                    </div>
+                    <div class="ml-auto text-right leading-tight shrink-0 whitespace-nowrap">
+                      <div class="text-[11px] font-semibold px" :class="row.flash ? row.dir : ''">{{ money(row.price) }}</div>
+                      <div class="text-[9px] text-tertiary">текущая цена</div>
+                    </div>
+                  </div>
+                </div>
               </div>
+              <div v-if="!cartOps.length" class="py-8 text-center text-[13px] text-secondary">Корзина пуста — добавьте бумаги.</div>
 
-              <!-- Рыночный контекст исполнения -->
-              <div class="card p-3.5 mb-3 flex items-center gap-3">
-                <span class="ai-badge shrink-0" :class="exec.marketOpen ? 'bg-brand-surface-muted text-brand-main' : 'bg-surface-2 text-secondary'" style="width:34px;height:34px;">
-                  <span v-html="ic.clock"></span>
-                </span>
-                <div class="text-[12px] leading-snug">
-                  <span class="font-semibold">Рынок US {{ exec.marketOpen ? 'открыт' : 'закрыт' }}.</span>
-                  <span class="text-secondary">{{ exec.marketOpen ? 'Сделки уйдут в исполнение сразу.' : 'Ордера встанут в очередь до открытия.' }}</span>
+              <!-- Чек -->
+              <div v-if="cartOps.length" class="pt-3 border-t border-bg-border">
+                <!-- Итого требуется — сверху; ниже серым доступный кэш -->
+                <div class="flex items-baseline justify-between gap-3">
+                  <span class="text-[13px] font-bold">Итого требуется</span>
+                  <span class="text-[19px] font-extrabold tabular-nums leading-none" :class="shortfall>0 ? 'text-base-red' : 'text-primary'">{{ money(Math.max(0, netDue)) }}</span>
+                </div>
+                <div class="text-[11px] text-tertiary mt-0.5 text-right">доступно {{ money(availCash) }}{{ marginCredit ? ' (с маржой)' : '' }}</div>
+                <!-- покупаем (−) / продаём (+) -->
+                <div class="mt-2 space-y-1.5 text-[12px]">
+                  <div class="flex items-center justify-between gap-2"><span class="text-secondary">Покупаем на</span><span class="tabular-nums font-semibold">−{{ money(buyTotal) }}</span></div>
+                  <div v-if="sellTotal" class="flex items-center justify-between gap-2"><span class="text-secondary">Продаём на</span><span class="tabular-nums font-semibold">+{{ money(sellTotal) }}</span></div>
+                </div>
+                <!-- предупреждение о нехватке кэша (только при нехватке) -->
+                <div v-if="shortfall>0" class="flex items-center gap-1.5 mt-2 text-[11.5px] font-semibold text-base-red">
+                  <span class="w-3.5 h-3.5 grid place-items-center shrink-0" v-html="ic.warn"></span>
+                  Не хватает {{ money(shortfall) }} — пополните счёт, чтобы продолжить.
                 </div>
               </div>
             </div>
 
-            <!-- ПРАВО: таблица сделок с построчными действиями -->
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <p class="label mb-0">План сделок</p>
-                <span class="text-[11px] text-tertiary">Sell → Buy</span>
-              </div>
-              <div class="card px-3.5 mb-2">
-                <div v-for="row in planRows" :key="row.ticker" class="prow" :class="{'opacity-45': row.status==='kept'}">
-                  <span class="tk-badge" :class="row.side==='sell' ? 'text-base-amber' : row.side==='buy' ? 'text-brand-main' : ''">{{ row.ticker.split('.')[0].slice(0,4) }}</span>
-                  <div class="min-w-0 flex-1">
-                    <div class="text-[13px] font-semibold flex items-center gap-1.5">
-                      {{ row.ticker }}
-                      <span v-if="row.replacedFrom" class="text-[10px] text-tertiary font-normal">↤ {{ row.replacedFrom }}</span>
-                    </div>
-                    <div class="text-[11px] text-secondary truncate">{{ row.name }} · {{ row.sector }}</div>
-                    <div v-if="row.side!=='kept'" class="text-[11px] tabular-nums mt-0.5" :class="row.side==='sell' ? 'text-base-amber' : 'text-brand-main'">
-                      {{ row.side==='sell' ? '−' : '+' }}{{ row.qty }} × {{ money(row.price) }} = {{ money(row.value) }}
-                    </div>
-                    <div v-else class="text-[11px] text-tertiary mt-0.5">оставлено без изменений</div>
-                  </div>
-                  <span class="frdot shrink-0" :style="frStyle(row.fr)">{{ row.fr }}</span>
-                  <!-- построчные действия -->
-                  <div class="shrink-0 flex flex-col items-end gap-1.5">
-                    <span class="chip" :class="row.side==='sell' ? 'chip-sell' : row.side==='buy' ? 'chip-buy' : 'chip-hold'">{{ sideLabel(row.side) }}</span>
-                    <div class="flex gap-1">
-                      <button v-if="row.side!=='kept'" class="iconbtn w-7 h-7" title="Оставить как есть" @click="keepRow(row)">
-                        <span v-html="ic.lock"></span>
-                      </button>
-                      <button v-else class="iconbtn w-7 h-7 text-brand-main" title="Вернуть в план" @click="unkeepRow(row)">
-                        <span v-html="ic.undo"></span>
-                      </button>
-                      <button class="iconbtn w-7 h-7 text-base-red" title="Убрать из плана" @click="removeRow(row)">
-                        <span v-html="ic.trash"></span>
-                      </button>
-                    </div>
-                  </div>
+            <!-- Настройки поручения -->
+            <p class="label">Настройки поручения</p>
+            <div class="card p-3.5 mb-3">
+              <div class="flex items-center justify-between gap-3 pb-3 border-b border-bg-border">
+                <div class="min-w-0">
+                  <div class="text-[12.5px] font-semibold">Допустимое отклонение</div>
+                  <div class="text-[11px] text-tertiary leading-tight mt-0.5">На сколько доли могут отклоняться от целевых (tolerance)</div>
                 </div>
-                <div v-if="!planRows.length" class="py-8 text-center text-[13px] text-secondary">
-                  Все позиции отклонены — нечего исполнять.
+                <div class="flex items-center gap-1 shrink-0">
+                  <input class="tolinp" v-model.number="tolerancePct" inputmode="numeric" maxlength="2"><span class="text-[12px] text-secondary">%</span>
                 </div>
               </div>
-              <p class="text-[11px] text-tertiary ml-0.5">Покупки финансируются продажами и свободными деньгами. Размер портфеля не меняется.</p>
+              <div class="flex items-center justify-between gap-3 pt-3">
+                <div class="min-w-0">
+                  <div class="text-[12.5px] font-semibold">Использование маржи</div>
+                  <div class="text-[11px] text-tertiary leading-tight mt-0.5">Разрешить покупки с кредитным плечом</div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-[11px] font-bold tabular-nums w-7 text-right" :class="allowMargin ? 'text-brand-main' : 'text-tertiary'">{{ allowMargin ? 'ON' : 'OFF' }}</span>
+                  <button class="w-11 h-6 rounded-full transition relative shrink-0" :class="allowMargin ? 'bg-brand-main' : 'bg-surface-2'" @click="allowMargin=!allowMargin" role="switch" :aria-checked="allowMargin">
+                    <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all" :style="{left: allowMargin ? '22px' : '2px'}"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Автоинвест CPS 268 — рельсы -->
+            <div class="ai ai-good">
+              <div class="flex items-start gap-3">
+                <span class="ai-badge tint-brand shrink-0"><span v-html="ic.repeat"></span></span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13px] font-bold">Поставить на регулярные инвестиции</div>
+                  <p class="text-[11.5px] text-secondary mt-0.5 leading-snug">Автоматически докупать этот портфель по расписанию — поручение CPS 268.</p>
+                </div>
+                <button class="shrink-0 w-11 h-6 rounded-full transition relative" :class="railsOn ? 'bg-brand-main' : 'bg-surface-2'" @click="railsOn=!railsOn">
+                  <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all" :style="{left: railsOn ? '22px' : '2px'}"></span>
+                </button>
+              </div>
+              <div v-if="railsOn" class="mt-3 pt-3 border-t bord-brand-soft flex gap-2">
+                <div class="flex-1">
+                  <div class="text-[11px] text-secondary mb-1">Сумма</div>
+                  <input class="inp py-2.5 text-[14px]" v-model="aiAmount" inputmode="numeric">
+                </div>
+                <div class="flex-1">
+                  <div class="text-[11px] text-secondary mb-1">Период</div>
+                  <div class="switch">
+                    <button :class="{on: aiPeriod==='W'}" @click="aiPeriod='W'">Неделя</button>
+                    <button :class="{on: aiPeriod==='M'}" @click="aiPeriod='M'">Месяц</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- История поручений — компактно (сквозная видимость на всех экранах) -->
+            <div class="mt-4 pt-4 border-t border-bg-border">
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <p class="label mb-0">История поручений</p>
+                <button class="linkbtn" @click="openHistory">Все поручения →</button>
+              </div>
+              <div class="card px-3.5">
+                <div v-for="o in orderHistory.slice(0,3)" :key="o.no" class="flex items-center justify-between gap-3 py-2.5 border-b border-bg-border last:border-b-0">
+                  <div class="min-w-0">
+                    <div class="text-[12.5px] font-semibold leading-tight truncate">{{ o.task }}</div>
+                    <div class="text-[10.5px] text-tertiary mt-0.5 tabular-nums">№ {{ o.no }} · {{ o.ago }}</div>
+                  </div>
+                  <span class="shrink-0 text-[11.5px] font-semibold" :class="o.status==='rejected' ? 'text-base-red' : o.status==='work' ? 'text-base-amber' : 'text-brand-main'">{{ {done:'Исполнено', work:'В работе', rejected:'Отказано'}[o.status] }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Футер шага 2 -->
-      <div v-if="screen==='builder'" class="footer">
-        <template v-if="builderStep==='setup'">
-          <button class="cta" :disabled="!setupValid" @click="buildPlan">
-            Получить рекомендацию AI
-            <span class="sub">{{ mode==='rebalance' ? riskTitle : ('Сборка на ' + money(volume)) }}</span>
-          </button>
-        </template>
-        <template v-else-if="builderStep==='plan'">
-          <button class="cta" :disabled="!activeOrders.length" @click="goConfirm">
-            Принять план
-            <span class="sub">{{ activeOrders.length }} {{ plural(activeOrders.length,'сделка','сделки','сделок') }} · FR {{ plan.before.fr.toFixed(1) }} → {{ plan.after.fr.toFixed(1) }}</span>
-          </button>
-          <button class="ghost mt-2" @click="builderStep='setup'">Изменить параметры</button>
-        </template>
+      <!-- Футер шага 2 (корзина) -->
+      <div v-if="screen==='builder' && builderStep==='plan'" class="footer">
+        <button v-if="shortfall>0" class="cta" style="background:#F5B301;color:#12100A" @click="topUpDiff">
+          Пополнить на {{ money(shortfall) }}
+          <span class="sub" style="color:#5A4E22">Доступно {{ money(availCash) }} · нужно {{ money(netDue) }}</span>
+        </button>
+        <button v-else class="cta" :disabled="!canProceed" @click="openReview">
+          Продолжить
+        </button>
+      </div>
+
+      <!-- ═══════ Модалка подтверждения поручения ═══════ -->
+      <div v-if="reviewOpen" class="absolute inset-0 z-[60] flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)" @click.self="reviewOpen=false">
+        <div class="bg-canvas-secondary rounded-2xl w-full max-w-[560px] max-h-[92%] flex flex-col shadow-2xl border border-bg-border">
+          <div class="flex items-start justify-between gap-3 p-5 pb-3 shrink-0">
+            <div class="text-[17px] font-bold leading-tight">Проверьте внимательно все свои данные</div>
+            <button class="iconbtn shrink-0 -mt-1" @click="reviewOpen=false"><span v-html="ic.close"></span></button>
+          </div>
+          <div class="px-5 pb-1 overflow-y-auto no-scrollbar">
+            <div class="border border-bg-border rounded-xl p-4">
+              <!-- шапка поручения -->
+              <div class="text-center pb-4 border-b border-bg-border">
+                <div class="text-[13px] text-tertiary">Поручение</div>
+                <div class="text-[15px] font-semibold mt-0.5">{{ mode==='rebalance' ? 'Ребалансировка портфеля' : 'Сборка портфеля' }}</div>
+                <div class="text-[12.5px] text-secondary mt-1.5">Клиент: {{ client.name }}</div>
+                <div class="text-[12.5px] text-secondary">Код клиента: {{ client.code }}</div>
+              </div>
+              <!-- основные параметры -->
+              <div class="pt-4">
+                <div class="text-[15px] font-bold mb-2.5">Основные параметры</div>
+                <div class="flex items-center justify-between text-[11px] text-tertiary pb-1.5 border-b border-bg-border"><span>Название</span><span>Значение</span></div>
+                <div class="flex items-center justify-between gap-3 text-[12.5px] py-2.5 border-b border-bg-border"><span class="text-secondary">Допустимое отклонение (tolerance)</span><span class="font-semibold tabular-nums shrink-0">{{ tolerancePct }}%</span></div>
+                <div class="flex items-center justify-between gap-3 text-[12.5px] py-2.5"><span class="text-secondary">Разрешить использование маржи</span><span class="font-semibold shrink-0">{{ allowMargin ? 'Да' : 'Нет' }}</span></div>
+              </div>
+              <!-- целевая структура -->
+              <div class="pt-4">
+                <div class="text-[15px] font-bold mb-2.5">Целевая структура портфеля</div>
+                <div class="flex items-center justify-between text-[11px] text-tertiary pb-1.5 border-b border-bg-border"><span>Тикер инструмента</span><span>Целевой вес инструмента</span></div>
+                <div v-for="t in targetStructure" :key="t.ticker" class="flex items-center justify-between gap-3 text-[12.5px] py-2.5 border-b border-bg-border"><span class="text-secondary">{{ t.ticker }}</span><span class="font-semibold tabular-nums shrink-0">{{ t.weight.toFixed(2) }}%</span></div>
+              </div>
+              <!-- дата / клиент -->
+              <div class="text-right text-[12px] text-secondary pt-4">
+                <div>Дата: {{ reviewTs }}</div>
+                <div class="mt-0.5">Клиент: {{ client.name }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-5 pt-3 flex justify-end shrink-0">
+            <button class="cta !w-auto px-6 py-3" @click="sendOrder">Отправить поручение</button>
+          </div>
+        </div>
       </div>
 
       <!-- ═══════════════════════════════════════════════════════════
@@ -1192,7 +1350,7 @@
               <div class="acc-avatar">{{ account.code }}</div>
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-[14px]">{{ account.title }}</div>
-                <div class="text-[12px] text-secondary mt-0.5">Целевая структура · допуск {{ (tolerance*100).toFixed(0) }}%</div>
+                <div class="text-[12px] text-secondary mt-0.5">Целевая структура · допуск {{ tolerancePct }}%{{ allowMargin ? ' · маржа ON' : '' }}</div>
               </div>
               <div class="text-right">
                 <div class="font-bold text-[14px] tabular-nums">{{ activeOrders.length }}</div>
@@ -1218,33 +1376,12 @@
               <div class="tile"><div class="kpi-k">От продаж</div><div class="text-[15px] font-bold tabular-nums mt-0.5">{{ money(sellProceeds) }}</div></div>
             </div>
 
-            <!-- ★ Предложение сохранить стратегию + автоинвест (CPS 268) -->
-            <div class="ai ai-good mb-4">
-              <div class="flex items-start gap-3">
-                <span class="ai-badge tint-brand"><span v-html="ic.repeat"></span></span>
-                <div class="flex-1 min-w-0">
-                  <div class="text-[13.5px] font-bold">Сохранить стратегию и инвестировать регулярно?</div>
-                  <p class="text-[12.5px] text-secondary mt-1 leading-snug">Будем автоматически докупать этот портфель по расписанию. Отдельное поручение CPS 268.</p>
-                </div>
-                <button class="shrink-0 w-11 h-6 rounded-full transition relative" :class="autoinvest ? 'bg-brand-main' : 'bg-surface-2'" @click="autoinvest=!autoinvest">
-                  <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all" :style="{left: autoinvest ? '22px' : '2px'}"></span>
-                </button>
-              </div>
-              <div v-if="autoinvest" class="mt-3 pt-3 border-t bord-brand-soft sec">
-                <div class="flex gap-2 mb-2.5">
-                  <div class="flex-1">
-                    <div class="text-[11px] text-secondary mb-1">Сумма</div>
-                    <input class="inp py-2.5 text-[14px]" v-model="aiAmount" inputmode="numeric">
-                  </div>
-                  <div class="flex-1">
-                    <div class="text-[11px] text-secondary mb-1">Период</div>
-                    <div class="switch">
-                      <button :class="{on: aiPeriod==='W'}" @click="aiPeriod='W'">Неделя</button>
-                      <button :class="{on: aiPeriod==='M'}" @click="aiPeriod='M'">Месяц</button>
-                    </div>
-                  </div>
-                </div>
-                <p class="text-[11px] text-tertiary">Регулярная покупка стратегии «{{ mode==='rebalance' ? riskTitle : 'Собранный портфель' }}» на {{ money(num(aiAmount)) }} / {{ aiPeriod==='W' ? 'неделя' : 'месяц' }}.</p>
+            <!-- Автоинвест настроен в корзине (CPS 268) — краткая сводка -->
+            <div v-if="railsOn" class="ai ai-good mb-4 flex items-center gap-3">
+              <span class="ai-badge tint-brand shrink-0"><span v-html="ic.repeat"></span></span>
+              <div class="flex-1 min-w-0 text-[12.5px] leading-tight">
+                <div class="font-bold">Автоинвест подключён · CPS 268</div>
+                <div class="text-secondary mt-0.5">Регулярная докупка {{ money(num(aiAmount)) }} / {{ aiPeriod==='W' ? 'неделя' : 'месяц' }} — отдельным поручением.</div>
               </div>
             </div>
 
@@ -1262,7 +1399,7 @@
       <div v-if="screen==='confirm'" class="footer">
         <button class="cta" :disabled="!codeReady" @click="submitCps">
           Подписать и отправить
-          <span class="sub">CPS 222{{ autoinvest ? ' + автоинвест CPS 268' : '' }}</span>
+          <span class="sub">CPS 222{{ railsOn ? ' + автоинвест CPS 268' : '' }}</span>
         </button>
       </div>
 
@@ -1276,7 +1413,7 @@
               <span v-html="ic.check" style="transform:scale(1.4)"></span>
             </div>
             <h2 class="text-[19px] font-semibold">Поручение отправлено</h2>
-            <p class="text-[13px] text-secondary mt-1">№ {{ orderNo }} · {{ activeOrders.length }} {{ plural(activeOrders.length,'сделка','сделки','сделок') }}<span v-if="autoinvest"><br>Автоинвест CPS 268 подключён</span></p>
+            <p class="text-[13px] text-secondary mt-1">№ {{ orderNo }} · {{ activeOrders.length }} {{ plural(activeOrders.length,'сделка','сделки','сделок') }}<span v-if="railsOn"><br>Автоинвест CPS 268 подключён</span></p>
           </div>
 
           <div class="flex items-center justify-between mb-2">
@@ -1306,6 +1443,23 @@
           <button v-if="!allDone && activeTrack.length" class="ghost mb-2 text-base-red bord-red" @click="cancelAll">
             Отменить все ордера
           </button>
+
+          <!-- История поручений — компактно (сквозная видимость) -->
+          <div class="mt-4 pt-4 border-t border-bg-border text-left">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <p class="label mb-0">История поручений</p>
+              <button class="linkbtn" @click="openHistory">Все поручения →</button>
+            </div>
+            <div class="card px-3.5">
+              <div v-for="o in orderHistory.slice(0,3)" :key="o.no" class="flex items-center justify-between gap-3 py-2.5 border-b border-bg-border last:border-b-0">
+                <div class="min-w-0">
+                  <div class="text-[12.5px] font-semibold leading-tight truncate">{{ o.task }}</div>
+                  <div class="text-[10.5px] text-tertiary mt-0.5 tabular-nums">№ {{ o.no }} · {{ o.ago }}</div>
+                </div>
+                <span class="shrink-0 text-[11.5px] font-semibold" :class="o.status==='rejected' ? 'text-base-red' : o.status==='work' ? 'text-base-amber' : 'text-brand-main'">{{ {done:'Исполнено', work:'В работе', rejected:'Отказано'}[o.status] }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1313,7 +1467,6 @@
       <div v-if="screen==='tracking'" class="footer">
         <button class="cta" @click="backToAnalysis">
           Вернуться к анализу
-          <span class="sub">Обновлённый портфель · FR {{ plan.after.fr.toFixed(1) }}</span>
         </button>
       </div>
 
@@ -1392,7 +1545,7 @@
               <div v-for="f in metricInfo.factors" :key="f.label" class="flex items-center gap-3 py-1.5">
                 <span class="text-[12px] text-secondary w-24 shrink-0">{{ f.label }}</span>
                 <div class="flex-1 bar"><div class="bar-cur" :style="{width:(f.val/7*100)+'%', background:'var(--brand-main)', opacity:1, borderRadius:'9999px'}"></div></div>
-                <span class="frdot shrink-0" :style="frStyle(f.val)">{{ f.val }}</span>
+                <span class="inline-grid place-items-center w-6 h-6 rounded-full text-[11px] font-bold tabular-nums bg-surface-2 text-primary border border-bg-border shrink-0">{{ f.val }}</span>
               </div>
             </div>
             <div v-if="metricInfo.rows" class="card px-3.5">
@@ -1416,8 +1569,8 @@
                 <div class="text-[13px] font-semibold">{{ c.ticker }}</div>
                 <div class="text-[11px] text-secondary truncate">{{ c.name }} · {{ c.sector }}</div>
               </div>
-              <span class="frdot" :style="frStyle(c.fr)">{{ c.fr }}</span>
-              <span class="text-brand-main" v-html="ic.plus"></span>
+              <span class="flex items-center gap-0.5 shrink-0" :title="'Freedom Rating: '+c.fr+' / 7'" v-html="starsFrac((c.fr-1)/2, 12)"></span>
+              <span class="text-brand-main shrink-0" v-html="ic.plus"></span>
             </button>
             <p v-if="!candidateResults.length" class="text-center text-[13px] text-secondary py-6">Ничего не найдено</p>
           </div>
@@ -1714,6 +1867,18 @@ const app = createApp({
       volume:50000,
       plan:null,
       planRowsRaw:[],
+      // корзина-конструктор
+      tolerancePct:3,                    // допустимое отклонение (tolerance), % — дефолт 3%
+      allowMargin:false,                 // разрешить использование маржи
+      railsOn:false,                     // поставить на регулярные инвестиции (CPS 268)
+      pricesTs:'',                       // время последнего обновления цен
+      topUp:0,                           // пополнение счёта (разница при нехватке кэша)
+      cartDetails:false,                 // развернуть подробности чека
+      reviewOpen:false,                  // модалка «проверьте данные» перед отправкой
+      reviewTs:'',                       // дата/время в модалке подтверждения
+      client:{ name:'Imirov Ruslan', code:'1577681' },
+      summaryStale:false,                // корзина изменена — сводку AI нужно обновить
+      aiSummaryText:'',                  // текст сводки AI
 
       // ── Экран создания портфеля (фильтры/настройки) ──
       constructWidgets:['volume','rating','alloc','exclude','region','sector','mktcap'],
@@ -1763,6 +1928,7 @@ const app = createApp({
 
     const frColor = fr => fr>=6?'var(--brand-main)': fr>=4?'var(--base-blue)': fr>=3?'var(--base-amber)': fr>0?'var(--base-red)':'var(--icon-muted)';
     const frStyle = fr => ({ background: frColor(fr) });
+    const frLabel = fr => fr>=6 ? 'Высокий рейтинг' : fr>=5 ? 'Хороший' : fr>=4 ? 'Средний' : fr>=3 ? 'Ниже среднего' : 'Низкий';
     const starsHtml = (n, color='#F5B301') => Array.from({length:3},(_,i)=>`<svg width="15" height="15" viewBox="0 0 24 24" fill="${i<n?color:'none'}" stroke="${color}" stroke-width="1.6"><path d="M12 3l2.5 6 6.5.5-5 4.3 1.6 6.4L12 17l-5.6 3.2L8 13.8 3 9.5 9.5 9z"/></svg>`).join('');
     // 3 звезды с дробным заполнением (value 0..3), золотые
     const starsFrac = (value, size=26) => {
@@ -1892,7 +2058,14 @@ const app = createApp({
         {key:'margin', k:'Начальная маржа', v:money(m.initialMargin), sub:'мин. маржа '+money(m.minMargin), cls:''},
       ];
     });
-    function scrollKpi(dir){ const el=document.getElementById('kpiTrack'); if(el) el.scrollBy({left: dir*(el.firstElementChild?.offsetWidth+10 || 200), behavior:'smooth'}); }
+    function scrollKpi(dir){
+      const el=document.getElementById('kpiTrack'); if(!el) return;
+      const step = (el.firstElementChild?.offsetWidth+10) || 200;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (dir>0 && el.scrollLeft >= maxScroll-4) { el.scrollTo({left:0, behavior:'smooth'}); return; }   // конец → в начало
+      if (dir<0 && el.scrollLeft <= 4) { el.scrollTo({left:maxScroll, behavior:'smooth'}); return; }        // начало → в конец
+      el.scrollBy({left: dir*step, behavior:'smooth'});
+    }
     function onKpiScroll(e){ const el=e.target, c=el.firstElementChild; if(!c) return; S.kpiActive=Math.round(el.scrollLeft/(c.offsetWidth+10)); }
     // Обновление Freedom Rating (пересчёт)
     function refreshRating(){ if(S.ratingRefreshing) return; S.ratingRefreshing=true;
@@ -1918,7 +2091,11 @@ const app = createApp({
     });
     // То, что реально рендерится на странице: минус убранные клиентом
     const widgets = computed(() => allWidgets.value.filter(id => !S.hidden[id]));
-    const tickerLogo = t => (typeof LOGOS!=='undefined' && LOGOS[t]) || null;
+    const tickerLogo = t => {
+      if (typeof LOGOS!=='undefined' && LOGOS[t]) return LOGOS[t];   // встроенный (offline)
+      const sym = String(t||'').split('.')[0];                        // фоллбэк FMP image-stock (даёт лого почти для всех)
+      return sym ? `https://financialmodelingprep.com/image-stock/${sym}.png` : null;
+    };
     function toggleWidget(id){ if(S.hidden[id]) delete S.hidden[id]; else S.hidden[id]=true; }
     function showAllWidgets(){ S.hidden={}; }
     // Web: левая колонка = факты счёта (+ менеджер), правая = анализ.
@@ -2009,7 +2186,7 @@ const app = createApp({
     const titles = computed(() => ({
       analysis:{t:'Анализ портфеля', s:'Portfolio Health · Freedom Rating'},
       construct:{t:'Создание портфеля', s:'Параметры и фильтры'},
-      builder:{t: S.mode==='rebalance'?'Ребалансировка':'Сборка портфеля', s:'AI Portfolio Builder'},
+      builder:{t:'AI Advisory', s:'Portfolio Builder'},
       confirm:{t:'Подтверждение', s:'CPS 222'},
       tracking:{t:'Исполнение', s:'CPS 222'},
     }));
@@ -2024,7 +2201,7 @@ const app = createApp({
     function buildPlan() {
       S.builderStep='loading';
       toast('load','AI строит рекомендацию', S.mode==='rebalance'?'Подбор замен по Freedom Rating':'Сборка портфеля из вселенной FR');
-      setTimeout(() => { computePlan(); S.builderStep='plan'; clearToasts(); }, 1400);
+      setTimeout(() => { computePlan(); S.builderStep='plan'; clearToasts(); startPriceFeed(); }, 1400);
     }
     function regenerate() {
       regenSeed++;
@@ -2048,13 +2225,20 @@ const app = createApp({
         const pool = CANDIDATES.filter(c=>!a.positions.some(p=>p.ticker===c.ticker));
         // ротация кандидатов при перегенерации
         const rotated = pool.slice(regenSeed % Math.max(1,pool.length)).concat(pool.slice(0, regenSeed % Math.max(1,pool.length)));
-        keep.forEach(p => rows.push({ ticker:p.ticker, name:p.name, sector:p.sector, fr:p.freedomRating, side:'kept', qty:0, price:0, value:0, status:'active', replacedFrom:null, isCash:false }));
+        keep.forEach(p => rows.push({ ticker:p.ticker, name:p.name, sector:p.sector, fr:p.freedomRating, side:'kept', qty:p.quantity||1, price:p.price||guessPrice(p.ticker), value:p.marketValueUsd, status:'active', replacedFrom:null, isCash:false }));
         weak.forEach((p,i) => {
           const c = rotated[i % rotated.length];
-          const qtySell = Math.max(1, Math.round(p.marketValueUsd / (p.marketValueUsd/ (p.marketValueUsd>2000?40:12))));
-          rows.push({ ticker:p.ticker, name:p.name, sector:p.sector, fr:p.freedomRating, side:'sell', qty: guessQty(p.marketValueUsd, p.ticker), price: guessPrice(p.ticker), value:p.marketValueUsd, status:'active', replacedFrom:null, isCash:false });
+          const sq = guessQty(p.marketValueUsd, p.ticker), sp = guessPrice(p.ticker);
+          rows.push({ ticker:p.ticker, name:p.name, sector:p.sector, fr:p.freedomRating, side:'sell', qty: sq, origQty: sq, price: sp, value: sq*sp, status:'active', replacedFrom:null, isCash:false });
           rows.push({ ticker:c.ticker, name:c.name, sector:c.sector, fr:c.fr, side:'buy', qty: Math.max(1,Math.round(p.marketValueUsd/c.price)), price:c.price, value: Math.round(p.marketValueUsd/c.price)*c.price, status:'active', replacedFrom:p.ticker, isCash:false });
         });
+        // AI задействует часть свободного кэша в покупки → появляется реальная доплата «Итого требуется»
+        const deployCash = cashVal * 0.7;
+        const buysR = rows.filter(r=>r.side==='buy');
+        if (buysR.length && deployCash > 0) {
+          const per = deployCash / buysR.length;
+          buysR.forEach(b => { const add = Math.floor(per / b.price); if(add>0){ b.qty += add; b.value = b.qty*b.price; } });
+        }
       } else {
         // rebuild: собрать N позиций из кандидатов на объём
         const vol = S.volume;
@@ -2073,7 +2257,9 @@ const app = createApp({
         });
       }
       S.planRowsRaw = rows;
+      S.topUp = 0;   // новый план — сброс пополнения
       recomputeAfter(beforeFr, beforeDiv, cashVal, total);
+      buildSummaryText(); S.summaryStale=false;
     }
 
     function guessPrice(tk){ const map={'AAPL.US':227,'TSLA.US':248,'T.US':22,'F.US':11,'MSFT.US':438}; return map[tk]||100; }
@@ -2115,6 +2301,81 @@ const app = createApp({
     function removeRow(row){ row.status='removed'; refresh(); }
     function refresh(){ recomputeAfter(S.account.frRaw, S.account.div, exec.value.availableCashUsd, S.account.netAssetsUsd); }
 
+    // ── Корзина-конструктор ──
+    const basketRows = computed(() => S.planRowsRaw.filter(r=>r.status==='active' && r.side!=='sell'));   // целевые позиции (покупки/оставляем)
+    const sellRows   = computed(() => S.planRowsRaw.filter(r=>r.status==='active' && r.side==='sell'));
+    // корзина операций: только реальные сделки — покупки, затем продажи (неизменные позиции не показываем)
+    const buyRows    = computed(() => S.planRowsRaw.filter(r=>r.status==='active' && r.side==='buy'));
+    const cartOps    = computed(() => S.planRowsRaw.filter(r=>r.status==='active' && (r.side==='buy'||r.side==='sell'))
+                                        .slice().sort((a,b)=> (a.side==='sell'?1:0) - (b.side==='sell'?1:0)));
+    const buyCount   = computed(() => buyRows.value.length);
+    const buyTotal   = computed(() => buyRows.value.reduce((s,r)=>s+(r.value||0),0));       // сумма покупок
+    const cartTotal  = computed(() => buyTotal.value);                                       // доли считаем от суммы покупок
+    const sellTotal  = computed(() => sellRows.value.reduce((s,r)=>s+(r.value||0),0));      // сумма продаж
+    const totalShares= computed(() => basketRows.value.reduce((s,r)=>s+(r.qty||0),0));      // всего бумаг в целевом портфеле
+    const shareSum   = computed(() => buyRows.value.reduce((s,r)=>s + (buyTotal.value ? r.value/buyTotal.value*100 : 0), 0));
+    const opsCount   = computed(() => activeOrders.value.length);   // реальные ордера (покупки + продажи)
+    // ── Кэш / бюджет чека ──
+    // свободный кэш: rebuild — введённый объём; rebalance — свободные деньги счёта
+    const baseCash   = computed(() => S.mode==='rebuild' ? num(S.volume) : exec.value.availableCashUsd);
+    // маржа увеличивает доступный кэш (+50% от размера портфеля)
+    const marginCredit = computed(() => S.allowMargin ? Math.round((S.mode==='rebuild' ? num(S.volume) : pa.value.netAssetsUsd) * 0.5) : 0);
+    const availCash  = computed(() => Math.round(baseCash.value + marginCredit.value + (num(S.topUp)||0)));
+    const netDue     = computed(() => Math.round(buyTotal.value - sellTotal.value));       // «Итого»: чистая доплата (покупки − продажи)
+    const shortfall  = computed(() => Math.max(0, netDue.value - availCash.value));          // не хватает кэша
+    const residualCash = computed(() => Math.round(availCash.value - Math.max(0, netDue.value))); // останется на счёте
+    const canProceed = computed(() => basketRows.value.length>0 && shortfall.value<=0);
+    const cartShare  = row => cartTotal.value ? (row.value/cartTotal.value*100).toFixed(1) : '0.0';
+    // для продаж: какая доля позиции ОСТАЁТСЯ после продажи (0 = продаём всё)
+    const sellRemain = row => row.origQty ? Math.round((row.origQty - row.qty)/row.origQty*100) : 0;
+    function setSellRemain(row,v){ const p=Math.min(99,Math.max(0,num(v))); row.qty=Math.max(1, Math.round(row.origQty*(1-p/100))); row.value=row.qty*row.price; markStale(); refresh(); }
+    const qtyMax = row => row.side==='sell' && row.origQty ? row.origQty : Infinity;
+    function qtyStep(row,d){ row.qty=Math.min(qtyMax(row), Math.max(1,(row.qty||1)+d)); row.value=row.qty*row.price; markStale(); refresh(); }
+    function setQty(row,v){ const q=Math.min(qtyMax(row), Math.max(1, Math.round(num(v))||1)); row.qty=q; row.value=q*row.price; markStale(); refresh(); }
+    function setRowShare(row,v){
+      // целевая доля «прилипает»: прочие строки фиксируем, эту масштабируем так,
+      // чтобы v_i/(v_i+Σпрочих)=p  →  v_i = p·Σпрочих/(1−p)
+      const p = Math.min(0.99, Math.max(0, num(v)/100));
+      const others = Math.max(0, cartTotal.value - (row.value||0));
+      const targetVal = p<=0 ? row.price : (others>0 ? p*others/(1-p) : (row.value||row.price));
+      row.qty = Math.max(1, Math.round(targetVal/row.price));
+      row.value = row.qty*row.price; markStale(); refresh();
+    }
+    function removeBasketRow(row){ row.status='removed'; markStale(); refresh(); }
+    function markStale(){ S.summaryStale=true; }
+    // пополнить счёт на недостающую сумму (в проде — CPS пополнения)
+    function topUpDiff(){ const d=shortfall.value; if(d<=0) return; S.topUp = (num(S.topUp)||0) + d; toast('ok','Счёт пополнен', money(d)+' зачислены — можно продолжить'); }
+    // ── Обновление цен (ручное + авто каждые 45с). Дрейф ±1.2%, стоимость пересчитывается, состав НЕ меняется (сводку не устаревляем) ──
+    function refreshPrices(manual){
+      let moved=0;
+      S.planRowsRaw.forEach(r=>{
+        if(r.isCash || r.status==='removed') return;
+        const drift = 1 + (Math.random()-0.5)*0.024;
+        const np = Math.max(0.01, Math.round(r.price*drift*100)/100);
+        r.dir = np>r.price ? 'up' : np<r.price ? 'down' : '';
+        r.price = np; r.value = r.qty*r.price; r.flash = true; moved++;
+      });
+      refresh();
+      S.pricesTs = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      setTimeout(()=>{ S.planRowsRaw.forEach(r=>{ r.flash=false; }); }, 900);
+      if(manual) toast('ok','Цены обновлены', 'Пересчитал стоимость по текущим котировкам');
+    }
+    let priceTimer=null;
+    function startPriceFeed(){ clearInterval(priceTimer); priceTimer=setInterval(()=>{ if(S.screen==='builder' && S.builderStep==='plan') refreshPrices(false); }, 45000); }
+    function stopPriceFeed(){ clearInterval(priceTimer); }
+    function refreshSummary(){ S.summaryStale=false; buildSummaryText(); toast('ok','Сводка AI обновлена','Пересчитал изменения по текущей корзине'); }
+    // единое обновление: котировки + сводка AI (кнопка в шапке)
+    function refreshAll(){ refreshPrices(false); S.summaryStale=false; buildSummaryText(); toast('ok','Обновлено','Котировки и сводка пересчитаны'); }
+    function buildSummaryText(){
+      if(!S.plan) return;
+      const sells=sellRows.value.length, buys=buyCount.value, kept=keptCount.value;
+      const dFr=(S.plan.after.fr-S.plan.before.fr).toFixed(1), dDiv=S.plan.after.div-S.plan.before.div;
+      if (S.mode==='rebalance')
+        S.aiSummaryText = `Заменяем ${sells} ${plural(sells,'слабую бумагу','слабые бумаги','слабых бумаг')} на кандидатов с более высоким Freedom Rating, ${kept} ${plural(kept,'позицию','позиции','позиций')} оставляем. Рейтинг вырастет на +${dFr}, диверсификация на +${dDiv}. Размер портфеля не меняется — покупки финансируются продажами.`;
+      else
+        S.aiSummaryText = `Собрали ${buys} ${plural(buys,'бумагу','бумаги','бумаг')} из вселенной Freedom Rating на ${money(S.volume)}. Средний рейтинг ${S.plan.after.fr.toFixed(1)}/7, диверсификация ${S.plan.after.div}/100. Доли выровнены по риску и качеству.`;
+    }
+
     /* ── add ticker ── */
     const candidateResults = computed(() => {
       const q = S.tickerSearch.trim().toUpperCase();
@@ -2130,11 +2391,11 @@ const app = createApp({
     }
 
     /* ── навигация ── */
-    function goBuilder(m){ if(m) S.mode=m; S.screen='builder'; S.builderStep='setup'; S.draft=null; }
+    function goBuilder(m){ if(m) S.mode=m; S.screen='builder'; S.draft=null; buildPlan(); }
 
     // ── Экран создания портфеля ──
     function goConstruct(){ S.screen='construct'; }
-    function createPortfolio(){ if(num(S.cVolume)<=0) return; goBuilder('rebuild'); }
+    function createPortfolio(){ const v=num(S.cVolume); if(v<=0) return; S.volume=v; S.volumeInput=fmtNum(v); goBuilder('rebuild'); }
     const constructAll = computed(() => S.constructWidgets);
     const constructVisible = computed(() => S.constructWidgets.filter(id => id==='volume' || !S.chidden[id]));
     const cLeft = computed(() => constructVisible.value.filter(id => ['rating','alloc','exclude','mktcap'].includes(id)));
@@ -2166,6 +2427,13 @@ const app = createApp({
       if (S.cRatingMax === 0) S.cRatingMin = 0;         // OFF — обе на 0
       else if (S.cRatingMin < 1) S.cRatingMin = 1;      // выбрал → min не остаётся на Off, минимум 1
     }
+    // клик по цифре под ползунком FR → двигаем верхнюю границу к ней (Off = 0)
+    function setFr(n){
+      if (n===0){ S.cRatingMax=0; S.cRatingMin=0; return; }
+      S.cRatingMax = n;
+      if (S.cRatingMin < 1) S.cRatingMin = 1;
+      if (S.cRatingMin > n) S.cRatingMin = n;
+    }
     // тикеры текущего портфеля (для виджета исключения)
     const portfolioTickers = computed(() => pa.value.positions.filter(p => p.ticker!=='CASH').map(p => p.ticker));
     const excludeAllOn = computed(() => portfolioTickers.value.length>0 && S.cExclude.length === portfolioTickers.value.length);
@@ -2183,14 +2451,40 @@ const app = createApp({
         if (S.chipOver[key] !== over) S.chipOver[key] = over;
       });
     }
-    onMounted(() => { nextTick(measureChips); window.addEventListener('resize', () => nextTick(measureChips)); });
+    onMounted(() => {
+      nextTick(measureChips); window.addEventListener('resize', () => nextTick(measureChips));
+      // битый логотип (напр. FMP 404) → прячем картинку и показываем текст тикера
+      document.addEventListener('error', (e) => {
+        const img = e.target;
+        if (img && img.tagName === 'IMG' && img.closest && img.closest('.tk-badge')) {
+          const badge = img.closest('.tk-badge');
+          img.style.display = 'none';
+          if (!badge.querySelector('.tk-fb')) {
+            const s = document.createElement('span');
+            s.className = 'tk-fb';
+            s.textContent = (img.getAttribute('alt') || '').split('.')[0].slice(0, 4);
+            s.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:10px;font-weight:700';
+            badge.appendChild(s);
+          }
+        }
+      }, true);
+    });
     watch(() => [S.screen, S.device], () => nextTick(measureChips));
-    function goConfirm(){ S.screen='confirm'; S.code=['','','','']; }
-    function backToAnalysis(){ S.screen='analysis'; S.builderStep='setup'; S.planRowsRaw=[]; S.plan=null; S.code=['','','','']; }
+    // целевая структура портфеля для модалки подтверждения (веса по стоимости)
+    const targetStructure = computed(() => {
+      const fp = S.planRowsRaw.filter(r=>r.status==='active' && r.side!=='sell');
+      const tot = fp.reduce((s,r)=>s+(r.value||0),0)||1;
+      return fp.map(r=>({ ticker:r.ticker, weight: r.value/tot*100 }));
+    });
+    function fmtDateTime(d){ const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+    function openReview(){ if(!canProceed.value) return; S.reviewTs = fmtDateTime(new Date()); S.reviewOpen = true; }
+    function sendOrder(){ S.reviewOpen = false; submitCps(); }
+    function goConfirm(){ stopPriceFeed(); S.screen='confirm'; S.code=['','','','']; }
+    function backToAnalysis(){ stopPriceFeed(); S.screen='analysis'; S.builderStep='setup'; S.planRowsRaw=[]; S.plan=null; S.code=['','','','']; }
     function back(){
       if (S.sheet){ S.sheet=null; return; }
       if (S.chat.open){ S.chat.open=false; return; }
-      if (S.screen==='builder'){ if(S.builderStep==='plan'){S.builderStep='setup';} else {saveDraftAndLeave();} return; }
+      if (S.screen==='builder'){ stopPriceFeed(); if(S.builderStep==='plan' && S.planRowsRaw.length){ saveDraftAndLeave(); } S.screen = S.mode==='rebuild' ? 'construct' : 'analysis'; S.planRowsRaw=[]; S.plan=null; return; }
       if (S.screen==='construct'){ S.screen='analysis'; return; }
       if (S.screen==='confirm'){ S.screen='builder'; S.builderStep='plan'; return; }
       if (S.screen==='tracking'){ backToAnalysis(); return; }
@@ -2199,11 +2493,10 @@ const app = createApp({
     function saveDraftAndLeave(){
       if (S.planRowsRaw.length){
         S.draft = { title: S.mode==='rebalance'?riskTitle.value:('Сборка '+money(S.volume)), mode:S.mode };
-        toast('bell','Черновик сохранён','Вернём при следующем входе — до 1 часа');
       }
       S.screen='analysis';
     }
-    function resumeDraft(){ S.screen='builder'; S.builderStep='plan'; if(!S.plan) computePlan(); S.draft=null; }
+    function resumeDraft(){ S.screen='builder'; S.builderStep='plan'; if(!S.plan) computePlan(); S.draft=null; startPriceFeed(); }
 
     /* ── счета / метрики ── */
     function openAccounts(){ S.sheet='accounts'; }
@@ -2230,10 +2523,10 @@ const app = createApp({
       if(v && i<3) nextTick(()=>S.codeInputs[i+1]?.focus());
     }
     function submitCps(){
-      // Строим payload как в CPS 222: targets[] + tolerance (+ CPS 268 если autoinvest)
-      const cps222 = { doc_type_id:222, data:{ targets: buildTargets(), tolerance:S.tolerance, allowMargin:0, orderStrategy:'incremental_current_weights' } };
+      // Строим payload как в CPS 222: targets[] + tolerance (+ CPS 268 если railsOn)
+      const cps222 = { doc_type_id:222, data:{ targets: buildTargets(), tolerance:S.tolerancePct/100, allowMargin:S.allowMargin?1:0, orderStrategy:'incremental_current_weights' } };
       console.log('CPS 222 payload →', JSON.stringify(cps222));
-      if (S.autoinvest){
+      if (S.railsOn){
         const cps268 = { doc_type_id:268, data:{ action:'add', amount:num(S.aiAmount), currency:'USD', period:S.aiPeriod, recurring_type:'autoinvest' } };
         console.log('CPS 268 payload →', JSON.stringify(cps268));
       }
@@ -2315,12 +2608,14 @@ const app = createApp({
       COMP_TYPES, compositionRows,
       kpis, scrollKpi, onKpiScroll, refreshRating, chart, CHART_PERIODS, radar, FR_FACTOR_LABELS,
       widgets, allWidgets, toggleWidget, showAllWidgets, tickerLogo, webBreakId, W_TITLE, W_UNITS, bodyH, fixedH, onDragStart, onDragOver, onDrop, onDragEnd, resetWidgets, isCollapsed, toggleCollapse,
-      money, moneyCur, pct, pctRaw, num, fmtNum, plural, frStyle, frColor, starsHtml, starsFrac, sparkline, ratingGauge, actionLabel, statusLabel, statusChip, sideLabel,
+      money, moneyCur, pct, pctRaw, num, fmtNum, plural, frStyle, frColor, frLabel, starsHtml, starsFrac, sparkline, ratingGauge, actionLabel, statusLabel, statusChip, sideLabel,
       goBuilder, goConfirm, backToAnalysis, back, resumeDraft, openAccounts, switchAccount, openMetric, openHistory,
       goConstruct, createPortfolio, constructAll, constructVisible, cLeft, cRight, toggleCWidget, showAllCWidgets, cMaxAvailable, cVolumeNum, cBalances,
-      allocOff, stocksPct, frOff, frMinDisp, clampFr, portfolioTickers, excludeAllOn, toggleExcludeAll, toggleArr,
+      allocOff, stocksPct, frOff, frMinDisp, clampFr, setFr, portfolioTickers, excludeAllOn, toggleExcludeAll, toggleArr,
       CW_TITLE, MKTCAPS, REGIONS, COUNTRIES, INDUSTRIES, PB_SECTORS,
       buildPlan, regenerate, keepRow, unkeepRow, removeRow, openAddTicker, addTicker, onVolume, toggleSector,
+      basketRows, sellRows, cartOps, buyCount, cartTotal, buyTotal, sellTotal, totalShares, shareSum, opsCount, cartShare, sellRemain, setSellRemain, qtyStep, setQty, setRowShare, removeBasketRow, refreshSummary, refreshPrices, refreshAll,
+      baseCash, marginCredit, availCash, netDue, shortfall, residualCash, canProceed, topUpDiff, targetStructure, openReview, sendOrder,
       onCode, submitCps, cancelOne, cancelAll, openChat, sendChat, toggleTheme, toast,
     };
   },
