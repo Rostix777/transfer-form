@@ -419,6 +419,9 @@
         <button class="iconbtn" aria-label="Назад" @click="back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
+        <button class="iconbtn shrink-0" @click="toggleTheme" title="Сменить тему (светлая/тёмная)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+        </button>
         <div class="toptitle">
           <b>{{ titles[screen].t }}</b>
           <span>{{ titles[screen].s }}</span>
